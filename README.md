@@ -17,7 +17,7 @@ This project implements a hybrid log classification system, combining three comp
    - Used for handling complex patterns when sufficient labeled training data is not available.
    - Provides a fallback or complementary approach to the other methods.
 
-<img width="700" height="800" alt="Flowchart" src="https://github.com/user-attachments/assets/c66cf8dc-e23a-4a42-b4ed-8e195a470a73" />
+<img width="450" height="550" alt="Flowchart" src="https://github.com/user-attachments/assets/c66cf8dc-e23a-4a42-b4ed-8e195a470a73" />
 
 
 ## Folder Structure
