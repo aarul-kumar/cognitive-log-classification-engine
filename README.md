@@ -3,6 +3,8 @@
 
 This project implements a hybrid log classification system, combining three complementary approaches to handle varying levels of complexity in log patterns. The classification methods ensure flexibility and effectiveness in processing predictable, complex, and poorly-labeled data patterns.
 
+---
+
 ## Classification Approaches
 
 1. **Regular Expression (Regex)**:
@@ -17,8 +19,13 @@ This project implements a hybrid log classification system, combining three comp
    - Used for handling complex patterns when sufficient labeled training data is not available.
    - Provides a fallback or complementary approach to the other methods.
 
+---
+
+## System Architecture
+
 <img width="450" height="550" alt="Flowchart" src="https://github.com/user-attachments/assets/c66cf8dc-e23a-4a42-b4ed-8e195a470a73" />
 
+---
 
 ## Folder Structure
 
@@ -34,6 +41,8 @@ This project implements a hybrid log classification system, combining three comp
 
 4. **Root Directory**:
    - Contains the FastAPI server code (`server.py`).
+
+---
 
 ## Setup Instructions
 
@@ -55,6 +64,8 @@ This project implements a hybrid log classification system, combining three comp
    - `http://127.0.0.1:8000/` (Main endpoint)
    - `http://127.0.0.1:8000/docs` (Interactive Swagger documentation)
    - `http://127.0.0.1:8000/redoc` (Alternative API documentation)
+
+---
 
 ## Usage
 
