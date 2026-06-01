@@ -1,18 +1,33 @@
 import re
+
 def classify_with_regex(log_message):
+    """Classify logs using regex patterns for specific, well-defined patterns"""
     regex_patterns = {
-        r"User User\d+ logged (in|out).": "User Action",
-        r"Backup (started|ended) at .*": "System Notification",
-        r"Backup completed successfully.": "System Notification",
-        r"System updated to version .*": "System Notification",
-        r"File .* uploaded successfully by user .*": "System Notification",
-        r"Disk cleanup completed successfully.": "System Notification",
-        r"System reboot initiated by user .*": "System Notification",
-        r"Account with ID .* created by .*": "User Action",
+        # Security patterns
+        r"(?i)(blocked|denied|attack|malicious|threat|suspicious|unauthorized|invalid credentials|login failed|access denied)": "Security Alert",
+        r"(?i)(admin|privilege|escalation|unauthorized access)": "Security Alert",
+        r"(?i)(IP.*blocked|block.*attack)": "Security Alert",
+        
+        # HTTP patterns
+        r"(?i)(HTTP|GET|POST|PUT|DELETE|PATCH|RCODE|status code)": "HTTP Status",
+        r"(?i)(\s(200|201|204|301|302|304|400|401|403|404|500|502|503)\s)": "HTTP Status",
+        
+        # System notification patterns
+        r"(?i)(backup|restore|completed successfully|finished|shutdown|reboot|restart)": "System Notification",
+        r"(?i)(uploaded|downloaded|sync|synchronized)": "System Notification",
+        r"(?i)(disk.*cleanup|maintenance|update.*version)": "System Notification",
+        
+        # User action patterns
+        r"(?i)(user.*logged (in|out)|login|logout)": "User Action",
+        r"(?i)(account.*created|user.*created|registration)": "User Action",
     }
+    
     for pattern, label in regex_patterns.items():
-        if re.search(pattern, log_message, re.IGNORECASE):
+        if re.search(pattern, log_message):
+            print(f"[REGEX] Matched pattern for: {label}")
             return label
+    
+    print(f"[REGEX] No pattern matched")
     return None
 
 if __name__ == "__main__":
