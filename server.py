@@ -46,8 +46,7 @@ async def health():
 async def classify_logs(file: UploadFile):
     """Classify logs from a CSV file"""
     try:
-        # Import classify only when needed
-        from classify import classify
+        from classify import classify, aggregate_results
         
         if not file.filename.endswith('.csv'):
             raise HTTPException(status_code=400, detail="File must be a CSV.")
@@ -56,41 +55,32 @@ async def classify_logs(file: UploadFile):
         if "source" not in df.columns or "log_message" not in df.columns:
             raise HTTPException(status_code=400, detail="CSV must contain 'source' and 'log_message' columns.")
 
-        # --- THE FIX: Unpack the dictionaries safely ---
+        # Execute classification (now returns XAI metadata)
         raw_results = classify(list(zip(df["source"], df["log_message"])))
         
-        # Split the dicts into pure string columns to prevent hashing errors
-        df["target_label"] = [r["target_label"] for r in raw_results]
-        df["layer"] = [r["layer"] for r in raw_results]
-        df["confidence"] = [r["confidence"] for r in raw_results]
+        # Apply Log Clustering and Statistical Analysis
+        clustered_logs, stats = aggregate_results(raw_results)
 
-        # Save output
+        # Save raw output to CSV for records
         os.makedirs("resources", exist_ok=True)
         output_file = "resources/output.csv"
+        df["target_label"] = [r.get("target_label", "Unclassified") for r in raw_results]
+        df["layer"] = [r.get("layer", "Pipeline Core") for r in raw_results]
+        df["confidence"] = [r.get("confidence", "Automated") for r in raw_results]
+        df["reasoning_tokens"] = [json.dumps(r.get("reasoning_tokens", [])) for r in raw_results]
         df.to_csv(output_file, index=False)
         
-        # Prepare response (value_counts now works because the column is pure strings)
-        stats = df["target_label"].value_counts().to_dict()
-        logs = []
-        for _, row in df.iterrows():
-            logs.append({
-                "source": str(row["source"]),
-                "log_message": str(row["log_message"]),
-                "target_label": str(row["target_label"]),
-                "layer": str(row.get("layer", "Pipeline Core")),
-                "confidence": str(row.get("confidence", "Automated"))
-            })
-        
+        # Return the expanded Enterprise Payload
         return {
-            "logs": logs,
-            "stats": {
-                **stats,
-                "total": len(df)
-            }
+            "logs": clustered_logs,
+            "stats": stats
         }
+        
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         try:
@@ -103,7 +93,7 @@ async def classify_logs_stream(file: UploadFile):
     """Classify logs with real-time progress streaming"""
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
-            from classify import classify_single_log
+            from classify import classify_single_log, aggregate_results
             
             if not file.filename.endswith('.csv'):
                 yield f"data: {json.dumps({'type': 'error', 'message': 'File must be a CSV'})}\n\n"
@@ -114,7 +104,6 @@ async def classify_logs_stream(file: UploadFile):
                 yield f"data: {json.dumps({'type': 'error', 'message': 'CSV must contain source and log_message columns'})}\n\n"
                 return
             
-            # Send start event
             yield f"data: {json.dumps({'type': 'start', 'total_logs': len(df)})}\n\n"
             
             results = []
@@ -122,38 +111,24 @@ async def classify_logs_stream(file: UploadFile):
                 source = str(row["source"])
                 log_message = str(row["log_message"])
                 
-                # Send processing event
                 yield f"data: {json.dumps({'type': 'processing', 'log_index': idx, 'source': source, 'message': log_message[:60]})}\n\n"
                 
-                # --- THE FIX: Unpack the dict for single logs too ---
                 res_dict = classify_single_log(source, log_message)
-                label = res_dict["target_label"]
-                layer = res_dict["layer"]
-                confidence = res_dict["confidence"]
+                results.append(res_dict)
                 
-                # Send completion event
-                yield f"data: {json.dumps({'type': 'completed', 'log_index': idx, 'label': label})}\n\n"
-                
-                results.append({
-                    "source": source,
-                    "log_message": log_message,
-                    "target_label": label,
-                    "layer": layer,
-                    "confidence": confidence
-                })
+                yield f"data: {json.dumps({'type': 'completed', 'log_index': idx, 'label': res_dict['target_label']})}\n\n"
             
-            # Calculate stats safely
-            labels = [r["target_label"] for r in results]
-            from collections import Counter
-            stats = dict(Counter(labels))
+            # Perform final clustering and analysis
+            clustered_logs, stats = aggregate_results(results)
             
-            # Save output
             os.makedirs("resources", exist_ok=True)
             output_df = pd.DataFrame(results)
+            # Serialize tokens for CSV storage
+            if 'reasoning_tokens' in output_df.columns:
+                output_df['reasoning_tokens'] = output_df['reasoning_tokens'].apply(json.dumps)
             output_df.to_csv("resources/output.csv", index=False)
             
-            # Send final event
-            yield f"data: {json.dumps({'type': 'complete', 'logs': results, 'stats': {**stats, 'total': len(results)}})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'logs': clustered_logs, 'stats': stats})}\n\n"
         
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"

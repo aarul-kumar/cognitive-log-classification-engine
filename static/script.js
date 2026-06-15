@@ -1,45 +1,92 @@
-// DOM Elements
+// DOM Elements - Setup
+const dropZone = document.getElementById('dropZone');
 const csvFileInput = document.getElementById('csvFile');
 const uploadBtn = document.getElementById('uploadBtn');
+const uploadText = document.getElementById('uploadText');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const resultsSection = document.getElementById('resultsSection');
 const errorSection = document.getElementById('errorSection');
 const errorMessage = document.getElementById('errorMessage');
-const tableBody = document.getElementById('tableBody');
 const statsContainer = document.getElementById('statsContainer');
 const downloadBtn = document.getElementById('downloadBtn');
 
-const detailModal = document.getElementById('detailModal');
-const closeModal = document.getElementById('closeModal');
+// DOM Elements - Table & Controls
+const tableBody = document.getElementById('tableBody');
+const searchInput = document.getElementById('searchInput');
+const labelFilter = document.getElementById('labelFilter');
+const tableHeaders = document.querySelectorAll('.sortable');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const pageInfo = document.getElementById('pageInfo');
 
-let classifiedData = null;
+// DOM Elements - Modal
+const logModal = document.getElementById('logModal');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const closeModalBtn = document.getElementById('closeModal');
+
+// State Variables
 let isEngineRunning = false;
 let fetchError = null;
 
-csvFileInput.addEventListener('change', (e) => {
-    const fileName = e.target.files[0]?.name;
-    if (fileName) {
+// Data State for Pagination, Filtering, and Sorting
+let allLogs = [];
+let filteredLogs = [];
+let currentPage = 1;
+const rowsPerPage = 50;
+let currentSort = { column: null, direction: 'desc' };
+
+// --- Drag & Drop Handlers ---
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            csvFileInput.files = e.dataTransfer.files;
+            handleFileSelection();
+        }
+    });
+}
+
+if (csvFileInput) csvFileInput.addEventListener('change', handleFileSelection);
+
+function handleFileSelection() {
+    const fileName = csvFileInput.files[0]?.name;
+    if (fileName && uploadText && uploadBtn) {
+        uploadText.textContent = fileName;
         uploadBtn.textContent = `Analyze ${fileName}`;
         uploadBtn.style.backgroundColor = 'var(--text-main)';
     }
-});
+}
 
-uploadBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    uploadAndClassify();
-});
+// --- Upload Pipeline ---
+if (uploadBtn) {
+    uploadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        uploadAndClassify();
+    });
+}
 
 async function uploadAndClassify() {
-    const file = csvFileInput.files[0];
+    const file = csvFileInput?.files[0];
     if (!file) return showError('Please select a CSV file first.');
     if (!file.name.endsWith('.csv')) return showError('Invalid format. Please upload a .csv file.');
 
     hideError();
-    resultsSection.classList.add('hidden');
+    if (resultsSection) resultsSection.classList.add('hidden');
 
     isEngineRunning = true;
     fetchError = null;
-    classifiedData = null;
+    allLogs = [];
 
     startThinkingProcess();
 
@@ -55,7 +102,11 @@ async function uploadAndClassify() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}: Failed to process logs.`);
 
-        classifiedData = data;
+        allLogs = data.logs || [];
+        populateFilterDropdown();
+        applyFiltersAndSort();
+        renderStatsGrid(data.stats);
+
     } catch (error) {
         fetchError = error;
     } finally {
@@ -63,13 +114,14 @@ async function uploadAndClassify() {
     }
 }
 
+// --- Thinking Animation ---
 async function startThinkingProcess() {
     const section = document.getElementById('loadingIndicator');
     const logContainer = document.getElementById('thinkingLog');
 
-    section.classList.remove('hidden');
-    uploadBtn.disabled = true;
-    logContainer.innerHTML = '';
+    if (section) section.classList.remove('hidden');
+    if (uploadBtn) uploadBtn.disabled = true;
+    if (logContainer) logContainer.innerHTML = '';
 
     const pipelineSequence = [
         {
@@ -100,12 +152,13 @@ async function startThinkingProcess() {
         document.querySelectorAll('.think-step.active').forEach(el => {
             el.classList.remove('active');
             el.classList.add('completed', 'faded');
-            el.querySelector('.think-sub').classList.remove('cursor');
+            const sub = el.querySelector('.think-sub');
+            if (sub) sub.classList.remove('cursor');
         });
 
         const step = pipelineSequence[i];
         const stepEl = document.createElement('div');
-        stepEl.className = 'think-step active';
+        stepEl.className = 'think-step active visible';
         stepEl.innerHTML = `
             <div class="think-icon"></div>
             <div class="think-content">
@@ -114,78 +167,136 @@ async function startThinkingProcess() {
                 <div class="think-sub cursor" id="sub-${i}">Initializing layer protocol...</div>
             </div>
         `;
-        logContainer.appendChild(stepEl);
-
-        void stepEl.offsetWidth;
-        stepEl.classList.add('visible');
-        stepEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (logContainer) {
+            logContainer.appendChild(stepEl);
+            stepEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
         const subEl = document.getElementById(`sub-${i}`);
         for (let j = 0; j < step.subs.length; j++) {
             if (fetchError) break;
-
-            subEl.textContent = step.subs[j];
-            const delay = isEngineRunning ? (1000 + Math.random() * 1500) : 150;
+            if (subEl) subEl.textContent = step.subs[j];
+            const delay = isEngineRunning ? (800 + Math.random() * 1000) : 150;
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
 
     if (fetchError) {
-        document.getElementById('loadingIndicator').classList.add('hidden');
-        uploadBtn.disabled = false;
+        if (section) section.classList.add('hidden');
+        if (uploadBtn) uploadBtn.disabled = false;
         showError(fetchError.message);
-    } else if (classifiedData) {
-        finalizeThinkingAndShow(classifiedData);
+    } else {
+        document.querySelectorAll('.think-step.active').forEach(el => {
+            el.classList.remove('active');
+            el.classList.add('completed', 'faded');
+            const sub = el.querySelector('.think-sub');
+            if (sub) {
+                sub.classList.remove('cursor');
+                sub.textContent = "Engine shutdown sequence complete.";
+            }
+        });
+
+        setTimeout(() => {
+            if (section) section.classList.add('hidden');
+            if (uploadBtn) uploadBtn.disabled = false;
+            if (resultsSection) {
+                resultsSection.classList.remove('hidden');
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 600);
     }
 }
 
-function finalizeThinkingAndShow(data) {
-    document.querySelectorAll('.think-step.active').forEach(el => {
-        el.classList.remove('active');
-        el.classList.add('completed', 'faded');
-        el.querySelector('.think-sub').classList.remove('cursor');
-        el.querySelector('.think-sub').textContent = "Engine shutdown sequence complete.";
+// --- Data Interaction Logic (Filtering, Sorting, Pagination) ---
+function populateFilterDropdown() {
+    if (!labelFilter) return;
+    const uniqueLabels = [...new Set(allLogs.map(log => log.target_label))].sort();
+    labelFilter.innerHTML = '<option value="all">All Classifications</option>';
+    uniqueLabels.forEach(label => {
+        const option = document.createElement('option');
+        option.value = label;
+        option.textContent = label;
+        labelFilter.appendChild(option);
     });
-
-    setTimeout(() => {
-        document.getElementById('loadingIndicator').classList.add('hidden');
-        uploadBtn.disabled = false;
-        displayResults(data);
-    }, 600);
 }
 
-function displayResults(data) {
-    resultsSection.classList.remove('hidden');
-    tableBody.innerHTML = '';
-    statsContainer.innerHTML = '';
+function applyFiltersAndSort() {
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const filterValue = labelFilter ? labelFilter.value : 'all';
 
-    const totalBox = createStatBox('Total Processed', data.stats.total);
-    statsContainer.appendChild(totalBox);
-
-    const classifications = Object.entries(data.stats)
-        .filter(([key]) => key !== 'total')
-        .sort((a, b) => b[1] - a[1]);
-
-    classifications.forEach(([type, count]) => {
-        statsContainer.appendChild(createStatBox(type, count));
+    filteredLogs = allLogs.filter(log => {
+        const matchesSearch = (log.log_message || '').toLowerCase().includes(searchTerm) ||
+            (log.source || '').toLowerCase().includes(searchTerm);
+        const matchesFilter = filterValue === 'all' || log.target_label === filterValue;
+        return matchesSearch && matchesFilter;
     });
 
-    if (data.logs && data.logs.length > 0) {
-        data.logs.forEach((log) => {
+    if (currentSort.column) {
+        filteredLogs.sort((a, b) => {
+            let valA = a[currentSort.column] || '';
+            let valB = b[currentSort.column] || '';
+
+            if (currentSort.column === 'confidence') {
+                valA = parseFloat(String(valA).replace(/[^0-9.]/g, '')) || 0;
+                valB = parseFloat(String(valB).replace(/[^0-9.]/g, '')) || 0;
+            } else {
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+            }
+
+            if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    currentPage = 1;
+    renderTable();
+}
+
+if (searchInput) searchInput.addEventListener('input', applyFiltersAndSort);
+if (labelFilter) labelFilter.addEventListener('change', applyFiltersAndSort);
+
+tableHeaders.forEach(header => {
+    header.addEventListener('click', () => {
+        const column = header.getAttribute('data-sort');
+
+        if (currentSort.column === column) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.column = column;
+            currentSort.direction = 'asc';
+        }
+
+        tableHeaders.forEach(th => th.classList.remove('asc', 'desc'));
+        header.classList.add(currentSort.direction);
+
+        applyFiltersAndSort();
+    });
+});
+
+function renderTable() {
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
+
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const logsToDisplay = filteredLogs.slice(startIndex, endIndex);
+
+    if (logsToDisplay.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 40px; color: var(--text-muted);">No logs found matching your criteria.</td></tr>';
+    } else {
+        logsToDisplay.forEach((log) => {
             const row = document.createElement('tr');
+            row.className = 'log-row';
+            row.dataset.raw = JSON.stringify(log);
 
-            // Failsafes incase API structure hasn't synced
-            const layer = log.layer || 'Pipeline Core';
-            const confidence = log.confidence || 'Automated';
-
+            // FIXED: Removed the 4th confidence column so it perfectly matches your 3 HTML headers
             row.innerHTML = `
                 <td class="source-cell">${escapeHtml(log.source)}</td>
-                <td class="message-cell">${escapeHtml(log.log_message.substring(0, 100))}${log.log_message.length > 100 ? '...' : ''}</td>
+                <td class="message-cell">${escapeHtml(log.log_message.substring(0, 80))}${log.log_message.length > 80 ? '...' : ''}</td>
                 <td>
-                    <span class="badge interactive" 
-                          data-label="${escapeHtml(log.target_label)}"
-                          data-layer="${escapeHtml(layer)}"
-                          data-confidence="${escapeHtml(confidence)}">
+                    <span class="badge interactive" data-label="${escapeHtml(log.target_label)}">
                         ${escapeHtml(log.target_label)}
                     </span>
                 </td>
@@ -194,23 +305,193 @@ function displayResults(data) {
         });
     }
 
-    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    updatePaginationControls();
 }
 
-// Modal Event Listeners
-document.getElementById('tableBody').addEventListener('click', (e) => {
-    const badge = e.target.closest('.badge.interactive');
-    if (badge) {
-        document.getElementById('detailLabel').textContent = badge.getAttribute('data-label');
-        document.getElementById('detailLayer').textContent = badge.getAttribute('data-layer');
-        document.getElementById('detailConfidence').textContent = badge.getAttribute('data-confidence');
+// --- Pagination Logic ---
+function updatePaginationControls() {
+    const totalPages = Math.ceil(filteredLogs.length / rowsPerPage);
 
-        detailModal.classList.remove('hidden');
+    if (pageInfo) {
+        if (filteredLogs.length === 0) {
+            pageInfo.textContent = `Showing 0 of 0 logs`;
+        } else {
+            const start = ((currentPage - 1) * rowsPerPage) + 1;
+            const end = Math.min(currentPage * rowsPerPage, filteredLogs.length);
+            pageInfo.textContent = `Showing ${start}-${end} of ${filteredLogs.length} logs`;
+        }
+    }
+
+    if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+    if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+}
+
+if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderTable();
+        }
+    });
+}
+
+if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredLogs.length / rowsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderTable();
+        }
+    });
+}
+
+// --- Modal Popup Logic ---
+if (tableBody) {
+    tableBody.addEventListener('click', (e) => {
+        // Triggers the modal anytime the row is clicked
+        const row = e.target.closest('.log-row');
+
+        if (row && row.dataset.raw) {
+            try {
+                const logData = JSON.parse(row.dataset.raw);
+                openModal(logData);
+            } catch (err) {
+                console.error("Failed to parse row data for modal:", err);
+            }
+        }
+    });
+}
+
+function openModal(log) {
+    const lbl = document.getElementById('detailLabel');
+    if (lbl) lbl.textContent = log.target_label || 'Unknown';
+
+    const layer = document.getElementById('detailLayer');
+    if (layer) layer.textContent = log.layer || 'Pipeline Core';
+
+    // This populates the confidence in the modal
+    const conf = document.getElementById('detailConfidence');
+    if (conf) conf.textContent = log.confidence || 'Automated';
+
+    const msg = document.getElementById('detailMessage');
+    if (msg) msg.textContent = log.log_message || '';
+
+    // --- Dynamic Engine Insights Injection ---
+    const insightsContainer = document.getElementById('engine-insights-container');
+
+    if (insightsContainer) {
+        let tokens = log.reasoning_tokens;
+
+        if (typeof tokens === 'string') {
+            try {
+                tokens = JSON.parse(tokens);
+            } catch (e) {
+                tokens = [];
+            }
+        }
+
+        let tokensHtml = '';
+        if (Array.isArray(tokens) && tokens.length > 0) {
+            tokensHtml = tokens
+                .map(token => `<span class="xai-token-badge">${escapeHtml(token)}</span>`)
+                .join('');
+        } else {
+            tokensHtml = `<span class="xai-no-tokens">No token attention traces available for this layer.</span>`;
+        }
+
+        const clusterCount = log.count || 1;
+        const clusterText = clusterCount > 1
+            ? `Matched structural cluster. De-duplicated <strong>${clusterCount}x</strong> identical events.`
+            : `Unique event. No matching structural clusters found in this dataset.`;
+
+        insightsContainer.innerHTML = `
+            <div class="insight-section">
+                <label>Token Attention Highlights (XAI)</label>
+                <div class="xai-token-wrapper">
+                    ${tokensHtml}
+                </div>
+            </div>
+            <div class="insight-section">
+                <label>Algorithmic Noise Reduction</label>
+                <p class="cluster-status-text">${clusterText}</p>
+            </div>
+        `;
+    }
+
+    if (modalBackdrop && logModal) {
+        modalBackdrop.classList.remove('hidden');
+        logModal.classList.remove('hidden');
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                logModal.classList.add('open');
+                modalBackdrop.classList.add('active');
+            });
+        });
+    }
+
+    document.body.style.overflow = 'hidden';
+
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+        mainContent.classList.add('drawer-open');
+    }
+}
+
+function closeModal() {
+    if (logModal) logModal.classList.remove('open');
+    if (modalBackdrop) modalBackdrop.classList.remove('active');
+
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+        mainContent.classList.remove('drawer-open');
+    }
+
+    document.body.style.overflow = '';
+
+    setTimeout(() => {
+        if (logModal && !logModal.classList.contains('open')) {
+            if (modalBackdrop) modalBackdrop.classList.add('hidden');
+            logModal.classList.add('hidden');
+        }
+    }, 400);
+}
+
+// Event Listeners for closing popup
+if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', closeModal);
+}
+
+if (modalBackdrop) {
+    modalBackdrop.addEventListener('click', (e) => {
+        if (e.target === modalBackdrop) {
+            closeModal();
+        }
+    });
+}
+
+// Allow closing with the 'Escape' key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && logModal && logModal.classList.contains('open')) {
+        closeModal();
     }
 });
 
-closeModal.addEventListener('click', () => detailModal.classList.add('hidden'));
-document.querySelector('.modal-backdrop').addEventListener('click', () => detailModal.classList.add('hidden'));
+// --- Utils & Exports ---
+function renderStatsGrid(stats) {
+    if (!statsContainer) return;
+    statsContainer.innerHTML = '';
+    const totalBox = createStatBox('Total Logs Processed', stats.total || allLogs.length);
+    statsContainer.appendChild(totalBox);
+
+    const classifications = Object.entries(stats)
+        .filter(([key]) => key !== 'total' && key !== 'avg_confidence' && key !== 'anomalies_by_source')
+        .sort((a, b) => b[1] - a[1]);
+
+    classifications.forEach(([type, count]) => {
+        statsContainer.appendChild(createStatBox(type, count));
+    });
+}
 
 function createStatBox(label, value) {
     const box = document.createElement('div');
@@ -223,47 +504,55 @@ function createStatBox(label, value) {
 }
 
 function showError(message) {
-    errorMessage.textContent = message;
-    errorSection.classList.remove('hidden');
+    if (errorMessage) errorMessage.textContent = message;
+    if (errorSection) errorSection.classList.remove('hidden');
 }
 
 function hideError() {
-    errorSection.classList.add('hidden');
+    if (errorSection) errorSection.classList.add('hidden');
 }
 
-document.getElementById('retryBtn').addEventListener('click', () => {
-    hideError();
-    csvFileInput.value = '';
-    uploadBtn.textContent = 'Upload and Analyze';
-    uploadBtn.style.backgroundColor = '';
-});
-
-downloadBtn.addEventListener('click', () => {
-    if (!classifiedData) return;
-
-    const headers = ['source', 'log_message', 'target_label', 'layer', 'confidence'];
-    const rows = [headers.join(',')];
-
-    classifiedData.logs.forEach(log => {
-        rows.push([
-            `"${log.source.replace(/"/g, '""')}"`,
-            `"${log.log_message.replace(/"/g, '""')}"`,
-            `"${log.target_label.replace(/"/g, '""')}"`,
-            `"${(log.layer || 'Pipeline Core').replace(/"/g, '""')}"`,
-            `"${(log.confidence || 'Automated').replace(/"/g, '""')}"`
-        ].join(','));
+const retryBtn = document.getElementById('retryBtn');
+if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+        hideError();
+        if (csvFileInput) csvFileInput.value = '';
+        if (uploadBtn) {
+            uploadBtn.textContent = 'Upload and Analyze';
+            uploadBtn.style.backgroundColor = '';
+        }
     });
+}
 
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'log_analysis_results.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-});
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+        if (allLogs.length === 0) return;
+        const headers = ['source', 'log_message', 'target_label', 'layer', 'confidence', 'count'];
+        const rows = [headers.join(',')];
+
+        filteredLogs.forEach(log => {
+            rows.push([
+                `"${(log.source || '').replace(/"/g, '""')}"`,
+                `"${(log.log_message || '').replace(/"/g, '""')}"`,
+                `"${(log.target_label || '').replace(/"/g, '""')}"`,
+                `"${(log.layer || '').replace(/"/g, '""')}"`,
+                `"${(log.confidence || '').replace(/"/g, '""')}"`,
+                `"${log.count || 1}"`
+            ].join(','));
+        });
+
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'cascade_analysis_results.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
 
 function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(text).replace(/[&<>"']/g, m => map[m]);
 }

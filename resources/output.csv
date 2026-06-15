@@ -1,14 +1,48 @@
-source,log_message,target_label,layer,confidence
-ModernCRM," ""IP 192.168.133.114 blocked due to potential attack""",Security Alert,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match)
-BillingSystem," ""User 12345 logged in.""",User Action,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match)
-AnalyticsEngine," ""File data_6957.csv uploaded successfully by user User265.""",System Notification,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match)
-AnalyticsEngine," ""Backup completed successfully.""",System Notification,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match)
-ModernHR," ""GET /v2/54fadb412c4e40cdbaed9335e4c35a9e/servers/detail HTTP/1.1 RCODE  200 len: 1583 time: 0.1878400""",HTTP Status,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match)
-ModernHR," ""Admin access escalation detected for user 9429""",Security Alert,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match)
-LegacyCRM," ""Case escalation for ticket ID 7324 failed because the assigned support agent is no longer active.""",Error,Layer 3 (LLM Generative Inference),High (Semantic Reasoning)
-LegacyCRM," ""Invoice generation process aborted for order ID 8910 due to invalid tax calculation module.""",Error,Layer 3 (LLM Generative Inference),High (Semantic Reasoning)
-DatabaseServer,Thread pool exhausted after 3000ms latency.,Resource Warning,Layer 2 (BERT Vector Boundary),54.9%
-SystemMonitor,Memory heap overflow detected in worker node.,Resource Warning,Layer 2 (BERT Vector Boundary),73.1%
-NetworkGateway,Packet drop rate exceeded safety threshold.,Network Anomaly,Layer 2 (BERT Vector Boundary),71.8%
-LegacyCRM," ""The 'BulkEmailSender' feature is no longer supported. Use 'EmailCampaignManager' for improved functionality.""",Warning,Layer 3 (LLM Generative Inference),High (Semantic Reasoning)
-LegacyCRM," ""The 'ReportGenerator' module will be retired in version 4.0. Please migrate to the 'AdvancedAnalyticsSuite' by Dec 2025""",Warning,Layer 3 (LLM Generative Inference),High (Semantic Reasoning)
+source,log_message,target_label,layer,confidence,reasoning_tokens
+DatabaseServer,Thread pool exhausted after 3000ms latency while executing read replica query.,Database Error,Layer 2 (BERT Vector Boundary),42.4%,"[""query"", ""replica""]"
+SystemMonitor,Memory heap overflow detected in worker node alpha-7 causing GC pressure spike.,Resource Warning,Layer 2 (BERT Vector Boundary),79.2%,"[""Memory"", ""heap""]"
+NetworkGateway,Packet drop rate exceeded safety threshold across VPN tunnel region us-east-1.,Network Anomaly,Layer 2 (BERT Vector Boundary),80.4%,"[""Packet"", ""drop""]"
+ModernCRM,IP 192.168.133.114 blocked due to repeated authentication failures and anomaly score 0.91.,Security Alert,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""blocked""]"
+BillingSystem,User 12345 logged in successfully from new device fingerprint (Chrome/Linux).,User Action,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""User 12345 logged in""]"
+AnalyticsEngine,File data_6957.csv uploaded successfully by user User265 with checksum validation passed.,System Notification,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""uploaded""]"
+AnalyticsEngine,Backup completed successfully but incremental snapshot delayed due to disk I/O contention.,System Notification,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""Backup""]"
+ModernHR,GET /v2/54fadb412c4e40cdbaed9335e4c35a9e/servers/detail HTTP/1.1 RCODE 200 len:1583 time:0.1878400,HTTP Status,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""GET""]"
+ModernHR,Admin access escalation detected for user 9429 from unknown geographic location.,Security Alert,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""Admin""]"
+LegacyCRM,Case escalation for ticket ID 7324 failed because assigned support agent is inactive and SLA breached.,Error,Layer 3 (LLM Generative Inference),High (Semantic Reasoning),"[""failed"", ""SLA breached"", ""inactive""]"
+LegacyCRM,Invoice generation aborted for order ID 8910 due to invalid tax calculation module version mismatch.,Error,Layer 3 (LLM Generative Inference),High (Semantic Reasoning),"[""aborted"", ""version mismatch"", ""invalid""]"
+LegacyCRM,"BulkEmailSender deprecated warning: feature removed in v3.2, migration required to EmailCampaignManager.",Warning,Layer 3 (LLM Generative Inference),High (Semantic Reasoning),"[""deprecated warning"", ""migration required""]"
+LegacyCRM,"ReportGenerator module marked legacy; scheduled removal in v4.0, dependency conflict detected in pipeline.",Warning,Layer 3 (LLM Generative Inference),High (Semantic Reasoning),"[""dependency conflict detected"", ""scheduled removal""]"
+PaymentGateway,Transaction rollback triggered due to inconsistent ledger state across distributed nodes.,Database Error,Layer 2 (BERT Vector Boundary),66.3%,"[""Transaction"", ""inconsistent""]"
+PaymentGateway,Card tokenization failure: encryption service returned null response during secure handshake.,Network Anomaly,Layer 2 (BERT Vector Boundary),44.6%,"[""handshake""]"
+AuthService,Multiple failed login attempts detected for user_id=8821 triggering adaptive rate limiting.,User Action,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""login""]"
+AuthService,JWT validation failed due to expired signing key rotation mismatch.,Database Error,Layer 2 (BERT Vector Boundary),57.7%,"[""expired"", ""rotation""]"
+SearchEngine,Index corruption detected in shard 7 causing partial query degradation under high load.,Database Error,Layer 2 (BERT Vector Boundary),47.6%,"[""query"", ""corruption""]"
+SearchEngine,Autocomplete service latency spike observed after schema update rollback attempt.,Database Error,Layer 2 (BERT Vector Boundary),49.2%,"[""schema"", ""Autocomplete""]"
+CloudOrchestrator,Kubernetes pod eviction triggered due to memory pressure on node cluster-east-3.,Resource Warning,Layer 2 (BERT Vector Boundary),53.1%,"[""memory"", ""pressure""]"
+CloudOrchestrator,Service mesh routing misconfiguration causing intermittent 502 responses across microservices.,HTTP Status,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""502""]"
+DevOpsPipeline,CI/CD deployment failed at step 'artifact verification' due to checksum mismatch.,Database Error,Layer 2 (BERT Vector Boundary),44.2%,"[""failed""]"
+DevOpsPipeline,Rollback initiated after canary deployment showed 12% error rate increase.,Resource Warning,Layer 2 (BERT Vector Boundary),35.0%,"[""increase"", ""canary""]"
+LoggingService,Log ingestion backlog reached 1.2M events causing delayed observability pipeline.,System Activity,Layer 2 (Heuristic Fallback),Automated,[]
+MonitoringAgent,CPU steal time abnormal in VM hypervisor layer indicating noisy neighbor issue.,Resource Warning,Layer 2 (BERT Vector Boundary),47.4%,"[""steal"", ""hypervisor""]"
+SecurityLayer,Suspicious outbound traffic detected with encrypted payload to unknown endpoint.,Security Alert,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""Suspicious""]"
+SecurityLayer,Possible lateral movement detected via internal API abuse pattern recognition.,Security Alert,Layer 2 (BERT Vector Boundary),61.9%,"[""abuse"", ""recognition""]"
+LegacyIntegration,SOAP endpoint timeout during migration bridge between v1 and v2 services.,Network Anomaly,Layer 2 (BERT Vector Boundary),67.4%,"[""timeout"", ""bridge""]"
+LegacyIntegration,Deprecated API call detected: /legacy/getUserInfo returning partial schema mismatch.,HTTP Status,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""get""]"
+DataWarehouse,ETL job failed due to schema drift in upstream Kafka stream partition 14.,Database Error,Layer 2 (BERT Vector Boundary),39.9%,"[""schema"", ""Kafka""]"
+DataWarehouse,Data reconciliation mismatch detected between staging and production tables.,Database Error,Layer 2 (BERT Vector Boundary),83.9%,"[""tables"", ""reconciliation""]"
+RecommendationEngine,Model inference drift detected after feature distribution shift in user embeddings.,Resource Warning,Layer 2 (BERT Vector Boundary),30.7%,"[""embeddings"", ""user""]"
+RecommendationEngine,Cold start fallback triggered due to insufficient user history vector coverage.,System Activity,Layer 2 (Heuristic Fallback),Automated,[]
+NotificationService,Email dispatch delayed due to SMTP queue congestion and retry backoff saturation.,HTTP Status,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""patch""]"
+NotificationService,Push notification service rate limited after burst traffic spike.,Network Anomaly,Layer 2 (BERT Vector Boundary),49.4%,"[""traffic""]"
+AuditService,Unauthorized configuration change detected in production environment audit log.,Security Alert,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""Unauthorized""]"
+AuditService,Immutable log chain verification failed at block index 88321.,Database Error,Layer 2 (BERT Vector Boundary),40.7%,"[""index"", ""Immutable""]"
+APIManager,Rate limit exceeded for client app_id=5521 causing throttling response 429.,Network Anomaly,Layer 2 (BERT Vector Boundary),39.7%,"[""Rate"", ""response""]"
+APIManager,Gateway request validation failed due to malformed JSON payload structure.,Network Anomaly,Layer 2 (BERT Vector Boundary),66.5%,"[""Gateway"", ""payload""]"
+FileStorage,Object storage inconsistency detected between primary and replica region sync.,System Notification,Layer 1 (Regex Syntactical Rule),100.0% (Deterministic Match),"[""sync""]"
+FileStorage,File retrieval latency increased due to cold storage tier migration.,Resource Warning,Layer 2 (BERT Vector Boundary),38.0%,"[""storage"", ""File""]"
+CacheLayer,Redis cache eviction storm triggered by memory fragmentation.,Resource Warning,Layer 2 (BERT Vector Boundary),67.2%,"[""memory"", ""fragmentation""]"
+CacheLayer,Cache miss ratio exceeded threshold after deployment of new ranking algorithm.,Resource Warning,Layer 2 (BERT Vector Boundary),37.3%,"[""Cache"", ""algorithm""]"
+StreamingService,Real-time stream lag detected with consumer offset delay > 12s.,Network Anomaly,Layer 2 (BERT Vector Boundary),70.7%,"[""stream"", ""delay""]"
+StreamingService,Kafka consumer group rebalance triggered due to node failure.,Network Anomaly,Layer 2 (BERT Vector Boundary),39.6%,"[""rebalance"", ""consumer""]"
+MLPipeline,Feature store inconsistency detected between training and inference pipeline.,Database Error,Layer 2 (BERT Vector Boundary),51.9%,"[""store"", ""inconsistency""]"
+MLPipeline,Model deployment failed due to incompatible ONNX runtime version mismatch.,Network Anomaly,Layer 2 (BERT Vector Boundary),40.2%,"[""ONNX"", ""incompatible""]"

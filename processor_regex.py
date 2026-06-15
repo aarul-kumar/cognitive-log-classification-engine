@@ -1,7 +1,7 @@
 import re
 
 def classify_with_regex(log_message):
-    """Classify logs using regex patterns for specific, well-defined patterns"""
+    """Classify logs using regex patterns and extract the matching token"""
     regex_patterns = {
         # Security patterns
         r"(?i)(blocked|denied|attack|malicious|threat|suspicious|unauthorized|invalid credentials|login failed|access denied)": "Security Alert",
@@ -23,16 +23,16 @@ def classify_with_regex(log_message):
     }
     
     for pattern, label in regex_patterns.items():
-        if re.search(pattern, log_message):
-            print(f"[REGEX] Matched pattern for: {label}")
-            return label
-    
-    print(f"[REGEX] No pattern matched")
+        match = re.search(pattern, log_message)
+        if match:
+            # Return the exact string that triggered the rule for Explainable AI tracing
+            return {
+                "target_label": label,
+                "reasoning_tokens": [match.group(0).strip()]
+            }
+            
     return None
 
 if __name__ == "__main__":
     print(classify_with_regex("User User123 logged in."))
     print(classify_with_regex("Backup started at 2024-06-01 10:00:00."))
-    print(classify_with_regex("System updated to version 2.1.0."))
-    print(classify_with_regex("Random log message without match."))
-    print(classify_with_regex("Account with ID 456 created by admin."))
