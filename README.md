@@ -32,7 +32,15 @@ This project implements a hybrid log classification system, combining three comp
 <img width="1918" height="1010" alt="Screen Recording 2026-06-15 184018" src="https://github.com/user-attachments/assets/e88bee01-d289-410a-b27d-2d2ae876df36" />
 
 ### Viewing classification details
+<img width="1918" height="1010" alt="Screen Recording 2026-06-15 201848" src="https://github.com/user-attachments/assets/f94592b1-adfd-449c-8d5c-aca1bc15fba3" />
 
+### Search & sort feature
+<img width="1918" height="1010" alt="Screen Recording 2026-06-15 203125" src="https://github.com/user-attachments/assets/281fe297-a0de-416e-b2db-8c36cc798383" />
+
+### Export classified log in CSV format as (source,log_message,target_label,layer,confidence,count)
+<img width="1918" height="1010" alt="Screen Recording 2026-06-15 210346" src="https://github.com/user-attachments/assets/1b7e0926-235c-4fa1-b24f-9ebf009f9992" />
+
+---
 
 ## Folder Structure
 
