@@ -1,0 +1,28 @@
+name: Clear Stale Deployments
+on:
+  workflow_dispatch: # Allows you to trigger this manually with a button
+
+permissions:
+  deployments: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deactivate and Wipe All Deployments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          echo "Scanning for deployments in $REPO..."
+          
+          for ID in $(gh api --method GET "/repos/$REPO/deployments?per_page=100" | jq -r ".[].id")
+          do
+            echo "Processing deployment ID: $ID"
+            # 1. Mark as inactive (Required by GitHub before deletion)
+            gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" --method POST /repos/$REPO/deployments/$ID/statuses -f "state=inactive"
+            
+            # 2. Hard delete the record
+            gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" --method DELETE /repos/$REPO/deployments/$ID
+            echo "Successfully deleted deployment $ID"
+          done
