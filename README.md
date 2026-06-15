@@ -27,6 +27,13 @@ This project implements a hybrid log classification system, combining three comp
 
 ---
 
+## Demo
+### Uploading log CSV for 3 layer classification
+<img width="1918" height="1010" alt="Screen Recording 2026-06-15 184018" src="https://github.com/user-attachments/assets/e88bee01-d289-410a-b27d-2d2ae876df36" />
+
+### Viewing classification details
+
+
 ## Folder Structure
 
 1. **`training/`**:
