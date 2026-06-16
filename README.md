@@ -3,10 +3,6 @@
 
 This project implements a hybrid log classification system, combining three complementary approaches to handle varying levels of complexity in log patterns. The classification methods ensure flexibility and effectiveness in processing predictable, complex, and poorly-labeled data patterns.
 
-You can try at : https://cognitive-log-classification-engine-production.up.railway.app/
-
-**DEMO Below**
-
 ---
 
 ## Classification Approaches
