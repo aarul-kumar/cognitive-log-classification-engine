@@ -28,16 +28,29 @@ This project implements a hybrid log classification system, combining three comp
 ---
 
 ## Demo
-### Uploading log CSV for 3 layer classification
+### 1. Multi-Layer Log Classification Pipeline
+Upload a CSV file containing log entries and watch the system automatically route each log through the hybrid classification framework. Depending on the log complexity, classification is performed using Regex rules, a Sentence Transformer + Logistic Regression model, or an LLM-based classifier.
+
 <img width="1918" height="1010" alt="Screen Recording 2026-06-15 184018" src="https://github.com/user-attachments/assets/e88bee01-d289-410a-b27d-2d2ae876df36" />
 
-### Viewing classification details
+
+### 2. Classification Insights & Decision Transparency
+Inspect detailed classification results for individual log entries, including the predicted label, classification layer used, confidence score, and supporting metadata. This helps users understand how each prediction was generated.
+
 <img width="1918" height="1010" alt="Screen Recording 2026-06-15 201848" src="https://github.com/user-attachments/assets/f94592b1-adfd-449c-8d5c-aca1bc15fba3" />
 
-### Search & sort feature
+
+### 3. Advanced Search, Filtering & Sorting
+Quickly locate specific logs using built-in search capabilities and organize results through sorting options. This makes analyzing large volumes of classified logs faster and more efficient.
+
 <img width="1918" height="1010" alt="Screen Recording 2026-06-15 203125" src="https://github.com/user-attachments/assets/281fe297-a0de-416e-b2db-8c36cc798383" />
 
-### Export classified log in CSV format as (source,log_message,target_label,layer,confidence,count)
+
+### 4. Export Classified Results
+Export processed logs to a CSV file for further analysis, reporting, or integration with downstream systems. The exported file includes:
+
+`source, log_message, target_label, layer, confidence, count`
+
 <img width="1918" height="1010" alt="Screen Recording 2026-06-15 210346" src="https://github.com/user-attachments/assets/1b7e0926-235c-4fa1-b24f-9ebf009f9992" />
 
 ---
